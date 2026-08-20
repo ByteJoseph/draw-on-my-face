@@ -1,0 +1,19 @@
+## TODO update video title - Integrate wtih PubNub To Draw on my Face
+# Draw on My Face
+# Draw on My Face
+# Draw on My Face
+# Draw on My Face
+# Draw on My Face
+
+OBS overlay that allows you to draw on my face
+
+
+Based on https://github.com/stephenlb/Multi-User-HTML5-Shared-Canvas
+
+## TODOs
+ - Get webcam on the darawing appa @KevinMcCallister thank yoU!
+ - Face tracking!!!! @DogoTubeOfficial (mediapipe for face trackign KevinMcCallister)
+ - Auto Reloader - when we make changes to the app OBS auto reloads
+ - Drawing app with caputre mouse and mobile pointer (store series of points)
+ - Ban for naughty: only draw the last 100 points (auto clear after)
+ - PubNub for the multi-user aspect

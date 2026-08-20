@@ -1,0 +1,31 @@
+<style>
+</style>
+<canvas id=canvas></canvas>
+<script src=pubnub.js></script>
+
+<script>(() => {
+    const userId = `userId-${ crypto.randomUUID() }`; // Thank you Bettlee 🎉
+    const channels = {
+      coords   : 'coords',
+      webcam   : 'webcam',
+      commands : 'commands',
+    };
+    const pubnub = PubNub({});
+    const canvas = document.getElementById('canvas');
+    console.log(canvas);
+    const context = canvas.getContext('2d');
+    const body = document.querySelector('body');
+    console.log(body);
+
+    // Capture pointer events
+    console.log(1);
+    body.addEventListener('pointermove', (event) => {
+        const x = event.clientX;
+        const y = event.clientY;
+        console.log(x, y);
+
+        /*pubnub.publish({
+            channel: chanenls.coord
+        });*/
+    });
+})()</script>
