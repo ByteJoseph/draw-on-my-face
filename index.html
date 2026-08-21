@@ -1,30 +1,86 @@
 <style>
+    div, canvas, body, html {
+        padding: 0;
+        margin: 0;
+    }
+    #canvas {
+        width: 100vw;
+        height: 100vh;
+    }
 </style>
 <canvas id=canvas></canvas>
 <script src=pubnub.js></script>
 
+<!--
+when data received by user
+    add to draw dictionary
+    append point user arary,
+    sort by seqID
+    slice by last 100 points
+
+Render Loop
+    clear
+    paint all draw points
+--!>
+
 <script>(() => {
+    const maxTrackPoints = 100;
+    let seqId = 0;
     const userId = `userId-${ crypto.randomUUID() }`; // Thank you Bettlee 🎉
+
+    const userTracks = {};
+    const pubnub = PubNub({});
     const channels = {
       coords   : 'coords',
       webcam   : 'webcam',
       commands : 'commands',
     };
-    const pubnub = PubNub({});
+
     const canvas = document.getElementById('canvas');
-    console.log(canvas);
     const context = canvas.getContext('2d');
     const body = document.querySelector('body');
-    console.log(body);
 
     // Capture pointer events
     body.addEventListener('pointermove', (event) => {
         const x = event.clientX;
         const y = event.clientY;
-        console.log(x, y);
+        const seq = seqId++;
+        const message = {
+            x: x,
+            y: y,
+            userId: userId,
+            seqId: seqId,
+        };
 
-        /*pubnub.publish({
-            channel: chanenls.coord
-        });*/
+        pubnub.publish({
+            channel: channels.coord,
+            message: message,
+        });
     });
-})()</script>
+
+    // Recieve Paint Events
+    pubnub.subscribe({
+        channel: channels.coord,
+        messages: addUserTrack,
+    });
+
+    function addUserTrack(message) {
+        console.log(message);
+        const userId = message.userId;
+        if (!(userId in userTracks)) userTracks[userId] = [];
+        const user = userTracks[userId];
+        user.push(message);
+
+        // Truncate to 100 points only
+        if (user.length > maxTrackPoints) user.shift();
+    }
+
+    function render() {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = '#000';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        requestAnimationFrame(render);
+        console.log('render' + Math.random());
+    }
+    requestAnimationFrame(render);
+})();</script>
