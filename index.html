@@ -55,6 +55,7 @@ Render Loop
 
     // Capture pointer events
     body.addEventListener('pointermove', (event) => {
+        event.preventDefault();
         const x = event.clientX;
         const y = event.clientY;
         const seq = seqId++;
@@ -69,6 +70,7 @@ Render Loop
             channel: channels.coord,
             message: message,
         });
+        return false;
     });
 
     // Recieve Paint Events
