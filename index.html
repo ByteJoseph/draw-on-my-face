@@ -35,30 +35,22 @@
         height: 100%; 
     }
     #canvas {
-        width: 100vw;
-        height: 100vh;
+        display: block;
+        width: 100%;
+        height: 100%;
     }
 </style>
 <canvas id=canvas></canvas>
 <script src=pubnub.js></script>
 
-<!--
-when data received by user
-    add to draw dictionary
-    append point user arary,
-    sort by seqID
-    slice by last 100 points
-
-Render Loop
-    clear
-    paint all draw points
--->
-
 <script>(() => {
     const maxTrackPoints = 20;
-    let seqId = 0;
     const userId = `userId-${ crypto.randomUUID() }`; // Thank you Bettlee 🎉
     const defaultStyle = "#BA0C2F";
+
+    let screenWidth = 0;
+    let screenHeight = 0;
+    let dirty = true;
 
     const userTracks = {};
     const pubnub = PubNub({});
@@ -73,8 +65,14 @@ Render Loop
     const body = document.querySelector('body');
 
     function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      screenWidth = window.innerWidth;
+      screenHeight = window.innerHeight;
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = Math.round(screenWidth * ratio);
+      canvas.height = Math.round(screenHeight * ratio);
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      Object.keys(userTracks).forEach(id => rebuildPaths(userTracks[id]));
+      dirty = true;
     }
 
     window.addEventListener('resize', resizeCanvas);
@@ -86,66 +84,104 @@ Render Loop
         return false;
     }, { passive: false }); 
 
-    // Capture pointer events
+    let pendingPoint = null;
     window.addEventListener('pointermove', (event) => {
         event.preventDefault();
-        const x = event.clientX;
-        const y = event.clientY;
-        const seq = seqId++;
-        const message = {
-            x: x,
-            y: y,
-            userId: userId,
-            seqId: seqId,
+        pendingPoint = {
+            x: event.clientX / screenWidth,
+            y: event.clientY / screenHeight,
         };
-
-        pubnub.publish({
-            channel: channels.coord,
-            message: message,
-        });
         return false;
     });
 
+    function publishPendingPoint() {
+        if (!pendingPoint) return;
+
+        const message = {
+            x: pendingPoint.x,
+            y: pendingPoint.y,
+            userId: userId,
+        };
+        pendingPoint = null;
+
+        pubnub.publish({
+            channel: channels.coords,
+            message: message,
+        });
+    }
+
     // Recieve Paint Events
     pubnub.subscribe({
-        channel: channels.coord,
+        channel: channels.coords,
         messages: addUserTrack,
     });
 
     function addUserTrack(message) {
-        const userId = message.userId;
-        if (!(userId in userTracks)) userTracks[userId] = [];
-        const user = userTracks[userId];
-        user.push(message);
+        if (typeof message.x != 'number') return;
+        if (typeof message.y != 'number') return;
 
-        // Truncate to 100 points only
-        if (user.length > maxTrackPoints) user.shift();
+        const id = message.userId;
+        if (!(id in userTracks)) userTracks[id] = { points: [], paths: [] };
+        const track = userTracks[id];
+        track.points.push(message);
+
+        // Truncate to maxTrackPoints points only
+        if (track.points.length > maxTrackPoints) track.points.shift();
+
+        rebuildPaths(track);
+        dirty = true;
+    }
+
+    function rebuildPaths(track) {
+        const points = track.points;
+        const paths = track.paths;
+        paths.length = 0;
+        if (points.length == 0) return;
+
+        let path = null;
+        let style = null;
+        let previousX = 0;
+        let previousY = 0;
+
+        points.forEach( point => {
+            const x = point.x * screenWidth;
+            const y = point.y * screenHeight;
+            const pointStyle = point.style || defaultStyle;
+
+            if (pointStyle !== style) {
+                const first = path === null;
+                style = pointStyle;
+                path = new Path2D();
+                paths.push({ style: style, path: path });
+                path.moveTo(first ? x : previousX, first ? y : previousY);
+            }
+
+            path.lineTo(x, y);
+            previousX = x;
+            previousY = y;
+        } );
     }
 
     function render() {
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        Object.keys(userTracks).forEach( userId => {
-            let events = userTracks[userId];
-            if (events.length == 0) return true;
-            if (!events[0].x) return true;
-            if (!events[0].y) return true;
-
-            context.beginPath();
-
-            // Set default color
-            context.strokeStyle = "#BA0C2F";
-            context.lineWidth = 3;
-
-            context.moveTo(events[0].x, events[0].y);
-            events.forEach( event => {
-                const style =  event.style || defaultStyle;
-                context.strokeStyle = style;
-                context.lineTo(event.x, event.y);
-            });
-            context.stroke();
-        } );
-
         requestAnimationFrame(render);
+        publishPendingPoint();
+
+        if (!dirty) return;
+        dirty = false;
+
+        context.clearRect(0, 0, screenWidth, screenHeight);
+
+        context.lineWidth = 3;
+        context.lineJoin = 'round';
+        context.lineCap = 'round';
+
+        Object.keys(userTracks).forEach( id => {
+            const paths = userTracks[id].paths;
+            for (let index = 0; index < paths.length; index++) {
+                context.strokeStyle = paths[index].style;
+                context.stroke(paths[index].path);
+            }
+        } );
     }
     requestAnimationFrame(render);
 })();</script>
