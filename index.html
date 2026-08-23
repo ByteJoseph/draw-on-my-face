@@ -5,6 +5,7 @@
 <!-- Draw on my Face -->
 
 <!-- TODO: prevent draining userId index -->
+    <!-- TODO: cleanup userId index after unused -->
 <!-- TODO: face tracking so drawing always moves with my face -->
 <!-- TODO: finger tracker so I can draw WITH YOU!!!! -->
 <!-- TODO: presure sensitivity: @helpsenterprises -->
@@ -44,9 +45,10 @@
 <script src=pubnub.js></script>
 
 <script>(() => {
-    const maxTrackPoints = 20;
+    const maxTrackPoints = 40;
+    const pointLifetimeMS = 5000;
     const userId = `userId-${ crypto.randomUUID() }`; // Thank you Bettlee 🎉
-    const defaultStyle = "#BA0C2F";
+    const defaultStyle = "#FF00FF";
 
     let screenWidth = 0;
     let screenHeight = 0;
@@ -123,6 +125,7 @@
         const id = message.userId;
         if (!(id in userTracks)) userTracks[id] = { points: [], paths: [] };
         const track = userTracks[id];
+        message.expires = Date.now() + pointLifetimeMS;
         track.points.push(message);
 
         // Truncate to maxTrackPoints points only
@@ -162,9 +165,26 @@
         } );
     }
 
+    // Drop line segments older than pointLifetimeMS
+    function expirePoints() {
+        const now = Date.now();
+        Object.keys(userTracks).forEach( id => {
+            const track = userTracks[id];
+            let expired = false;
+            while (track.points.length && track.points[0].expires <= now) {
+                track.points.shift();
+                expired = true;
+            }
+            if (!expired) return;
+            rebuildPaths(track);
+            dirty = true;
+        } );
+    }
+
     function render() {
         requestAnimationFrame(render);
         publishPendingPoint();
+        expirePoints();
 
         if (!dirty) return;
         dirty = false;
