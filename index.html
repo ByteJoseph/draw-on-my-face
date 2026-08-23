@@ -55,8 +55,14 @@ Render Loop
     const context = canvas.getContext('2d');
     const body = document.querySelector('body');
 
+    // Prevent mobile scroll
+    body.addEventListener('touchmove', (event) => {
+        event.preventDefault();
+        return false;
+    }); 
+
     // Capture pointer events
-    body.addEventListener('pointermove', (event) => {
+    window.addEventListener('pointermove', (event) => {
         event.preventDefault();
         const x = event.clientX;
         const y = event.clientY;
@@ -102,8 +108,8 @@ Render Loop
 
             context.beginPath();
             // Set default color
-            context.strokeStyle = "#1F1";
-            context.lineWidth = 6;
+            context.strokeStyle = "#1FF";
+            context.lineWidth = 3;
 
             context.moveTo(events[0].x, events[0].y);
             events.forEach( event => {
