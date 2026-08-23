@@ -1,3 +1,16 @@
+<!-- Draw on my Face -->
+<!-- Draw on my Face -->
+<!-- Draw on my Face -->
+<!-- Draw on my Face -->
+<!-- Draw on my Face -->
+
+<!-- TODO: prevent draining userId index -->
+<!-- TODO: face tracking so drawing always moves with my face -->
+<!-- TODO: finger tracker so I can draw WITH YOU!!!! -->
+<!-- TODO: presure sensitivity: @helpsenterprises -->
+<!-- TODO: change color and storke size: @kyugu -->
+<!-- TODO:  -->
+<!-- TODO:  -->
 <style>
     div, canvas, body, html {
         padding: 0;
@@ -21,10 +34,10 @@ when data received by user
 Render Loop
     clear
     paint all draw points
---!>
+-->
 
 <script>(() => {
-    const maxTrackPoints = 100;
+    const maxTrackPoints = 20;
     let seqId = 0;
     const userId = `userId-${ crypto.randomUUID() }`; // Thank you Bettlee 🎉
 
@@ -77,10 +90,29 @@ Render Loop
 
     function render() {
         context.clearRect(0, 0, canvas.width, canvas.height);
-        context.fillStyle = '#000';
-        context.fillRect(0, 0, canvas.width, canvas.height);
+        Object.keys(userTracks).forEach( userId => {
+            let events = userTracks[userId];
+            if (events.length == 0) return true;
+            if (!events[0].x) return true;
+            if (!events[0].y) return true;
+
+            context.beginPath();
+            // Set default color
+            context.strokeStyle = "#1F1";
+            context.lineWidth = 6;
+
+            context.moveTo(events[0].x, events[0].y);
+            events.forEach( event => {
+                context.lineTo(event.x, event.y);
+            });
+            context.stroke();
+            //console.log(userId);
+        } );
+        // TODO Loop over all user curor Tracks
+        //context.fillStyle = '#000';
+        //context.fillRect(0, 0, canvas.width, canvas.height);
         requestAnimationFrame(render);
-        console.log('render' + Math.random());
+        //console.log('render' + Math.random());
     }
     requestAnimationFrame(render);
 })();</script>
