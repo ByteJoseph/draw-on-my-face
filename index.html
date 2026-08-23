@@ -55,6 +55,14 @@ Render Loop
     const context = canvas.getContext('2d');
     const body = document.querySelector('body');
 
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
     // Prevent mobile scroll
     body.addEventListener('touchmove', (event) => {
         event.preventDefault();
