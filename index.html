@@ -58,6 +58,7 @@ Render Loop
     const maxTrackPoints = 20;
     let seqId = 0;
     const userId = `userId-${ crypto.randomUUID() }`; // Thank you Bettlee 🎉
+    const defaultStyle = "#BA0C2F";
 
     const userTracks = {};
     const pubnub = PubNub({});
@@ -132,11 +133,13 @@ Render Loop
             context.beginPath();
 
             // Set default color
-            context.strokeStyle = "#FF0000";
+            context.strokeStyle = "#BA0C2F";
             context.lineWidth = 3;
 
             context.moveTo(events[0].x, events[0].y);
             events.forEach( event => {
+                const style =  event.style || defaultStyle;
+                context.strokeStyle = style;
                 context.lineTo(event.x, event.y);
             });
             context.stroke();
