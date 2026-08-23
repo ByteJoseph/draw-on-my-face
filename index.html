@@ -59,7 +59,7 @@ Render Loop
     body.addEventListener('touchmove', (event) => {
         event.preventDefault();
         return false;
-    }); 
+    }, { passive: false }); 
 
     // Capture pointer events
     window.addEventListener('pointermove', (event) => {
